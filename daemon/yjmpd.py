@@ -5,13 +5,14 @@ import atexit
 import signal
 
 
-class daemon:
+class YJMPD:
     """A generic daemon class.
 
     Usage: subclass the daemon class and override the run() method."""
 
-    def __init__(self, pidfile):
+    def __init__(self, pidfile, root):
         self.pidfile = pidfile
+        self.root = root
 
     def daemonize(self):
         """Deamonize class. UNIX double fork mechanism."""
@@ -26,7 +27,7 @@ class daemon:
             sys.exit(1)
 
         # decouple from parent environment
-        os.chdir('/')
+        os.chdir(self.root)
         os.setsid()
         os.umask(0)
 
@@ -116,6 +117,16 @@ class daemon:
         """Restart the daemon."""
         self.stop()
         self.start()
+
+
+
+    def status(self):
+        """Print out status."""
+        if os.path.exists(self.pidfile):
+            message = "Daemon running.\n"
+        else:
+            message = "Daemon not running.\n"
+        sys.stdout.write(message)
 
     def run(self):
         """You should override this method when you subclass Daemon.
