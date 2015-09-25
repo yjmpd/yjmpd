@@ -18,5 +18,13 @@ class Database:
         self.cursor = self.cnx.cursor()
 
     def executeQuery(self, query):
-        self.cursor.execute(query)
-        self.cnx.commit()
+        try:
+            self.cursor.execute(query)
+            self.cnx.commit()
+        except pymysql.err.ProgrammingError as e:
+            print(e)
+            print(query)
+
+
+
+
