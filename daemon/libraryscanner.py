@@ -15,16 +15,17 @@ class LibraryScanner:
 
     global url
     url = config.get("Library", "jancodir")
-    def __init__(self):
+    def __init__(self, Database, librarypath):
         """Init class """
         ob = Observer()
         event = Filehandler()
         ob.schedule(event, url, recursive=True)
         ob.start()
-        self.db = Database()
+        self.url = librarypath
+        self.db = Database
 
     def scanRecursif(self):
-        print("Scanning library "+url+" recursifly...")
+        print("Scanning library "+url+" recursively...")
         i = 1
         query = ('REPLACE INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
         for root, directories, filenames in os.walk(url):
