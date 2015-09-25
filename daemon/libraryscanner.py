@@ -4,7 +4,6 @@ from mutagen.easyid3 import EasyID3
 import mutagen._util
 import os
 import configparser
-from Database import Database
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -17,12 +16,14 @@ class LibraryScanner:
     url = config.get("Library", "jancodir")
     def __init__(self, Database, librarypath):
         """Init class """
-        ob = Observer()
-        event = Filehandler()
-        ob.schedule(event, url, recursive=True)
-        ob.start()
         self.url = librarypath
         self.db = Database
+
+        ob = Observer()
+        event = Filehandler(self)
+        ob.schedule(event, url, recursive=True)
+        ob.start()
+
 
     def scanRecursif(self):
         print("Scanning library "+url+" recursively...")
@@ -49,6 +50,17 @@ class LibraryScanner:
         self.db.executeQuery(query)
         return ('REPLACE INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
 
+    def insertSong(self, path):
+        try:
+            id3 = EasyID3(path)
+            self.db.executeQuery(b"REPLACE INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ('" + self.getValue(id3,"genre") + b"'," + b"'" + path.replace("'", '\\\'').encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" + self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" + self.getValue(id3, "tracknumber") + b"'," + b"'" + self.getValue(id3, "date") + b"'," + b"'0') " )
+                                 #b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) AND `trackName` = VALUES(`trackName`) AND `artistName` = VALUES(`artistName`) AND `albumName` = VALUES(`albumName`) AND `albumArtist` = VALUES(`albumArtist`) AND `trackNumber` = VALUES(`trackNumber`) AND `year` = VALUES(`year`) AND `duration` = VALUES(`duration`)")
+
+        except: (mutagen.id3._util.ID3NoHeaderError)
+
+    def removeSong(self,path):
+        self.db.executeQuery("DELETE FROM `tracks` WHERE trackUrl = " + path.replace("'", '\\\''))
+
     def getValue(self, id3, value):
         try:
             return (id3[value][0].replace("'", '\\\'').encode('utf8'))
@@ -58,13 +70,25 @@ class LibraryScanner:
 
 
 class Filehandler(FileSystemEventHandler):
+    def __init__(self, LibraryScanner):
+        self.libscanner = LibraryScanner
+
+    def process(self, event):
+        if not(event.is_directory):
+            if os.path.isfile(event.src_path) and event.src_path.lower().endswith(('.mp3','.flac')):
+                self.libscanner.insertSong(event.src_path)
+            else:
+                self.libscanner.removeSong(event.src_path)
+
     def on_modified(self, event):
-        print (event) 
+        self.process(event)
+
+    def on_created(self, event):
+        self.process(event)
 
 if __name__ == "__main__":
     try:
         libscanner = LibraryScanner()
-        libscanner.scanRecursif()
     except KeyboardInterrupt:
         print("Bye")
 

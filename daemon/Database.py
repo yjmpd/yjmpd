@@ -5,20 +5,17 @@ import configparser
 import pymysql
 from warnings import filterwarnings
 
-
-config = configparser.ConfigParser()
-config.read("../config.cfg")
 filterwarnings('ignore', category = pymysql.Warning)
-
 class Database:
 
-    def __init__(self):
+    def __init__(self, DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE):
         """Init class """
-        self.cnx = pymysql.connect(user=config.get("Database", "username"), passwd=config.get("Database", "password"), host=config.get("Database", "host"), db=config.get("Database", "database"), port=config.getint("Database", "port"))
+        self.cnx = pymysql.connect(user=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST,  database=DB_DATABASE, port=DB_PORT)
         self.cursor = self.cnx.cursor()
 
     def executeQuery(self, query):
         try:
+            print(query)
             self.cursor.execute(query)
             self.cnx.commit()
         except pymysql.err.ProgrammingError as e:
