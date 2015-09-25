@@ -37,7 +37,7 @@ class LibraryScanner:
                     try:
                         print(str(i) + '\t' + path, end='\r')
                         id3 = EasyID3(path)
-                        query += (b"('" + self.getValue(id3,"genre") + b"'," + b"'" + path.encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" +  self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" +  self.getValue(id3, "tracknumber") + b"'," + b"'" +  self.getValue(id3, "date") + b"'," + b"'0'),")
+                        query += (b"('" + self.getValue(id3,"genre") + b"'," + b"'" + path.replace("'", '\\\'').encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" +  self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" +  self.getValue(id3, "tracknumber") + b"'," + b"'" +  self.getValue(id3, "date") + b"'," + b"'0'),")
                     except (mutagen.id3._util.ID3NoHeaderError):
                         print("Error reading ID3 tag",  end='\r')
 
@@ -50,7 +50,7 @@ class LibraryScanner:
 
     def getValue(self, id3, value):
         try:
-            return (id3[value][0].encode('utf8'))
+            return (id3[value][0].replace("'", '\\\'').encode('utf8'))
         except (KeyError,  IndexError, ValueError):
             print("Error reading value of ID3 tag",  end='\r')
         return "".encode('utf8')
