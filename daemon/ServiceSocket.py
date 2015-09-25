@@ -29,8 +29,8 @@ class ClientHandler(threading.Thread):
             if not data:
                 break
             else:
-                datastring = data.decode('utf-8').rstrip(endline).lower()
-            print(datastring)
+                datastring = data.decode('utf-8', "ignore").rstrip(endline).lower()
+                print(datastring)
 
 
 

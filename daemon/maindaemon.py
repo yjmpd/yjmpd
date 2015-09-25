@@ -1,12 +1,22 @@
 import sys
 import os
+import configparser
+
 from daemon.yjmpd import YJMPD
 from daemon.HTTPServer import HTTPServerThread
 
 debug = False
 
-HTTP_PORT = 8585 #Get this from config
-MUSIC_DIR = "" #Get this from config
+config = configparser.ConfigParser()
+try:
+    config.read("config.cfg")
+    HTTP_PORT = int(config.get("HTTP", "port"))
+    DAEMON_PORT = int(config.get("Daemon", "port"))
+    MUSIC_DIR = str(config.get("Library", "musicdir"))
+except Exception as e:
+    print(e.with_traceback())
+    sys.exit(1)
+
 
 class MainDaemon(YJMPD):
     def run(self):
