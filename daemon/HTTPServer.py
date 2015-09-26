@@ -4,6 +4,10 @@ import threading
 
 import daemon.API as API
 
+"""
+HTTP request handler.
+"""
+
 
 class HTTPServerThread(threading.Thread):
     def __init__(self, PORT):
@@ -17,20 +21,32 @@ class HTTPServerThread(threading.Thread):
         httpd.serve_forever()
 
 
-testdata = []
+"""
+REST API
+"""
 
 
 class HTTPHandler(http.server.SimpleHTTPRequestHandler):
+    def send_message(self, status, content_type, data):
+        self.send_response(status)
+        self.send_header("Content-type:", content_type)
+        self.end_headers()
+        self.wfile.write(data)
+        self.wfile.write("\n".encode("utf-8"))
+
     def do_GET(self):
-        """Serve a GET request."""
-        retval = API.calls.APIcall(str(self.path).lstrip("/"), "get")
-        if retval is not None:
-            self.send_response(200)
-            self.send_header("Content-type:", "application/json")
-            self.end_headers()
-            self.wfile.write(retval)
-            self.wfile.write("\n".encode("utf-8"))
-        else:
+        """ Serve a GET request. """
+        path = str(self.path).lstrip("/").split("?")[0]
+        try:
+            args = str(self.path).lstrip("/").split("?")[1]
+        except IndexError as e:
+            print(e)
+            self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
+            return
+        retval = API.calls.APIcall(path)
+        if retval is not None:  # if call is valid API function
+            self.send_message(200, "application/json", retval(args))
+        else:  # else parse as normal HTTP request
             f = self.send_head()
             if f:
                 try:
@@ -39,24 +55,23 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
                     f.close()
 
     def do_POST(self):
-        retval = API.calls.APIcall(str(self.path).lstrip("/"), "post")
-        if retval is not None:
-            if self.headers["Content-Type"] == 'application/json':
+        """ Serve a POST request. """
+        path = str(self.path).lstrip("/").split("?")[0]
+        try:
+            args = str(self.path).lstrip("/").split("?")[1] #if no args
+        except IndexError as e:
+            print(e)
+            self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
+            return
+
+        retval = API.calls.APIcall(path)
+        if retval is not None:  # if call is valid API function
+            if self.headers["Content-Type"] == 'application/json':  # if data is json data
                 length = int(self.headers["Content-Length"])
                 rawdata = self.rfile.read(length)
-                result = retval(API.calls.getfromjson(rawdata,"data"))
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(result)
-                self.wfile.write("\n".encode("utf-8"))
-            else:
-                self.send_response(422)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(API.calls.jsonify({"error":"Not JSON data."}))
-                self.wfile.write("\n".encode("utf-8"))
-        else:
-            self.send_response(403)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
+                result = retval(args, API.calls.getfromrawjson(rawdata, "data"))
+                self.send_message(200, "application/json", result)
+            else:  # if not json data
+                self.send_message(422, "application/json", API.calls.jsonify({"error": "Not JSON data."}))
+        else:  # if not API function
+            self.send_message(403, "application/json", API.calls.jsonify({"error": "Not an API function"}))

@@ -1,22 +1,35 @@
 import json
 
+"""
+Add a key to the validAPIcalls dictionary, with a corresponding function
+Function should return jsonified data, so that it can then be passed on to the client.
+example:
+
+Add this to the dictionary
+"getsongs": calls.getsongs
+
+then implement this function
+@staticmethod
+    def getsongs():
+        return calls.jsonify({"song": song})
+
+And the jsonified data will be returned to the client.
+
+Every function MUST return jsonified data!
+
+"""
+
 
 class calls:
     @staticmethod
-    def APIcall(sanitizedpath, type):
-        if type == "get":
-            if sanitizedpath in validAPIcalls:
-                return validAPIcalls[sanitizedpath]()
-            else:
-                return None
-        elif type == "post":
-            if sanitizedpath in validAPIcalls:
-                return validAPIcalls[sanitizedpath]
-            else:
-                return None
+    def APIcall(sanitizedpath):
+        if sanitizedpath in validAPIcalls:
+            return validAPIcalls[sanitizedpath]
+        else:
+            return None
 
     @staticmethod
-    def getfromjson(data, param):
+    def getfromrawjson(data, param):
         return calls.dejsonify(data)[param]
 
     @staticmethod
@@ -28,14 +41,14 @@ class calls:
         return json.loads(rawdata.decode("utf-8"))
 
     @staticmethod
-    def getsongs():
-        return calls.jsonify({"song": song})
+    def getsongs(args):
+        return calls.jsonify({"song": song, "args": args})
 
     @staticmethod
-    def setsong(songname):
+    def setsong(args, songname):
         global song
         song = songname
-        return calls.jsonify({"result": "OK"})
+        return calls.jsonify({"result": "OK", "args": args})
 
 
 validAPIcalls = {"getsongs": calls.getsongs, "setsong": calls.setsong}
