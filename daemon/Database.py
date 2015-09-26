@@ -15,13 +15,17 @@ class Database:
 
     def executeQuery(self, query):
         try:
-            print(query)
             self.cursor.execute(query)
             self.cnx.commit()
         except pymysql.err.ProgrammingError as e:
             print(e)
             print(query)
 
+    def removeSong(self, path):
+         self.db.executeQuery("DELETE FROM `tracks` WHERE trackUrl = " + path.replace("'", '\\\''))
 
+    def updateInsertSong(self, genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path): #notworking
+        self.db.executeQuery("INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ('" + genre + b"','" + path.replace("'", '\\\'') + "','" + trackname + "','" + artistname + "','" + albumname + "','" + albumartist + "','" + tracknumber + "','" + year + "','0') " +
+                             b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`)")
 
 

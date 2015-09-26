@@ -28,7 +28,7 @@ class LibraryScanner:
     def scanRecursif(self):
         print("Scanning library "+url+" recursively...")
         i = 1
-        query = ('REPLACE INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
+        query = ('INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
         for root, directories, filenames in os.walk(url):
             for filename in filenames:
                 if filename.lower().endswith(('.mp3','.flac')):
@@ -42,31 +42,32 @@ class LibraryScanner:
                         query += (b"('" + self.getValue(id3,"genre") + b"'," + b"'" + path.replace("'", '\\\'').encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" +  self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" +  self.getValue(id3, "tracknumber") + b"'," + b"'" +  self.getValue(id3, "date") + b"'," + b"'0'),")
                     except (mutagen.id3._util.ID3NoHeaderError):
                         print("Error reading ID3 tag",  end='\r')
+        self.commitAndCleanQuery(query)
 
 
     def commitAndCleanQuery(self, query):
         query = query[:-1]
-        query += (';'.encode('utf8'))
+        query += b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`)"
         self.db.executeQuery(query)
-        return ('REPLACE INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
+        return ('INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
 
     def insertSong(self, path):
         try:
             id3 = EasyID3(path)
-            self.db.executeQuery(b"REPLACE INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ('" + self.getValue(id3,"genre") + b"'," + b"'" + path.replace("'", '\\\'').encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" + self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" + self.getValue(id3, "tracknumber") + b"'," + b"'" + self.getValue(id3, "date") + b"'," + b"'0') " )
-                                 #b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) AND `trackName` = VALUES(`trackName`) AND `artistName` = VALUES(`artistName`) AND `albumName` = VALUES(`albumName`) AND `albumArtist` = VALUES(`albumArtist`) AND `trackNumber` = VALUES(`trackNumber`) AND `year` = VALUES(`year`) AND `duration` = VALUES(`duration`)")
+            self.db.executeQuery(b"INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ('" + self.getValue(id3,"genre") + b"'," + b"'" + path.replace("'", '\\\'').encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" + self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" + self.getValue(id3, "tracknumber") + b"'," + b"'" + self.getValue(id3, "date") + b"'," + b"'0') "  +
+                                 b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`)")
 
         except: (mutagen.id3._util.ID3NoHeaderError)
 
     def removeSong(self,path):
-        self.db.executeQuery("DELETE FROM `tracks` WHERE trackUrl = " + path.replace("'", '\\\''))
+        self.db.removeSong(path)
 
     def getValue(self, id3, value):
         try:
             return (id3[value][0].replace("'", '\\\'').encode('utf8'))
         except (KeyError,  IndexError, ValueError):
             print("Error reading value of ID3 tag",  end='\r')
-        return "".encode('utf8')
+        return b""
 
 
 class Filehandler(FileSystemEventHandler):
@@ -85,11 +86,3 @@ class Filehandler(FileSystemEventHandler):
 
     def on_created(self, event):
         self.process(event)
-
-if __name__ == "__main__":
-    try:
-        libscanner = LibraryScanner()
-    except KeyboardInterrupt:
-        print("Bye")
-
-
