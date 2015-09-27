@@ -40,14 +40,14 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         """ Serve a GET request. """
         path = str(self.path).lstrip("/").split("?")[0]
-        try:
-            args = str(self.path).lstrip("/").split("?")[1]
-        except IndexError as e:
-            print(e)
-            self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
-            return
         retval = API.calls.APIcall(path)
         if retval is not None:  # if call is valid API function
+            try:
+                args = str(self.path).lstrip("/").split("?")[1]
+            except IndexError as e:
+                print(e)
+                self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
+                return
             self.send_message(200, "application/json", retval(args))
         else:  # else parse as normal HTTP request
             f = self.send_head()
@@ -60,15 +60,14 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         """ Serve a POST request. """
         path = str(self.path).lstrip("/").split("?")[0]
-        try:
-            args = str(self.path).lstrip("/").split("?")[1] #if no args
-        except IndexError as e:
-            print(e)
-            self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
-            return
-
         retval = API.calls.APIcall(path)
         if retval is not None:  # if call is valid API function
+            try:
+                args = str(self.path).lstrip("/").split("?")[1] #if no args
+            except IndexError as e:
+                print(e)
+                self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
+                return
             if self.headers["Content-Type"] == 'application/json':  # if data is json data
                 length = int(self.headers["Content-Length"])
                 rawdata = self.rfile.read(length)
