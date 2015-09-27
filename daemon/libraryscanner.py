@@ -3,53 +3,43 @@
 from mutagen.easyid3 import EasyID3
 import mutagen._util
 import os
-import configparser
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-config = configparser.ConfigParser()
-config.read("../config.cfg")
-
 class LibraryScanner:
 
-    global url
-    url = config.get("Library", "jancodir")
     def __init__(self, Database, librarypath):
         """Init class """
         self.url = librarypath
         self.db = Database
-
+        self.scanRecursif()
         ob = Observer()
-        event = Filehandler(self)
-        ob.schedule(event, url, recursive=True)
+        ob.schedule(Filehandler(self), self.url, recursive=True)
         ob.start()
 
 
     def scanRecursif(self):
-        print("Scanning library "+url+" recursively...")
-        i = 1
-        query = ('INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
-        for root, directories, filenames in os.walk(url):
-            for filename in filenames:
-                if filename.lower().endswith(('.mp3','.flac')):
-                    if(i % 50 == 0 ):
-                        query = self.commitAndCleanQuery(query)
-                    path = os.path.join(root,filename)
-                    i+=1
-                    try:
-                        print(str(i) + '\t' + path, end='\r')
-                        id3 = EasyID3(path)
-                        query += (b"('" + self.getValue(id3,"genre") + b"'," + b"'" + path.replace("'", '\\\'').encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" +  self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" +  self.getValue(id3, "tracknumber") + b"'," + b"'" +  self.getValue(id3, "date") + b"'," + b"'0'),")
-                    except (mutagen.id3._util.ID3NoHeaderError):
-                        print("Error reading ID3 tag",  end='\r')
-        self.commitAndCleanQuery(query)
+        print("Scanning library "+self.url+" recursively...")
+        for root, directories, filenames in os.walk(self.url):
+            t = threading.Thread(target=self.scandir,args=(filenames,root))
+            t.start()
+            print(threading.active_count())
+        self.db.pushbuffer()
 
+    def scandir(self,filenames, root):
+        for filename in filenames:
+            if filename.lower().endswith(('.mp3','.flac',".m4a")):
+                path = os.path.join(root,filename)
+                try:
+                    print(path, end='\r')
+                    id3 = EasyID3(path)
+                    self.db.insertMultipleSongs(self.getValue(id3, "genre"),path.replace("'", '\\\''),self.getValue(id3, "title"),self.getValue(id3, "artist"),self.getValue(id3, "album"),self.getValue(id3, "performer"),self.getValue(id3, "tracknumber"),self.getValue(id3, "date"),"0")
+                except (mutagen.id3._util.ID3NoHeaderError):
+                    print("Error reading ID3 tag",  end='\r')
 
-    def commitAndCleanQuery(self, query):
-        query = query[:-1]
-        query += b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`)"
-        self.db.executeQuery(query)
-        return ('INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES '.encode('utf8'))
 
     def insertSong(self, path):
         try:
@@ -57,17 +47,18 @@ class LibraryScanner:
             self.db.executeQuery(b"INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ('" + self.getValue(id3,"genre") + b"'," + b"'" + path.replace("'", '\\\'').encode('utf8') + b"'," + b"'" + self.getValue(id3, "title") + b"'," + b"'" + self.getValue(id3, "artist") + b"'," + b"'" +  self.getValue(id3, "album") + b"'," + b"'" +  self.getValue(id3, "performer") + b"'," + b"'" + self.getValue(id3, "tracknumber") + b"'," + b"'" + self.getValue(id3, "date") + b"'," + b"'0') "  +
                                  b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`)")
 
-        except: (mutagen.id3._util.ID3NoHeaderError)
+        except (mutagen.id3._util.ID3NoHeaderError):
+            pass
 
     def removeSong(self,path):
         self.db.removeSong(path)
 
     def getValue(self, id3, value):
         try:
-            return (id3[value][0].replace("'", '\\\'').encode('utf8'))
+            return id3[value][0].replace("'", "\\'")
         except (KeyError,  IndexError, ValueError):
             print("Error reading value of ID3 tag",  end='\r')
-        return b""
+        return ""
 
 
 class Filehandler(FileSystemEventHandler):
@@ -76,7 +67,7 @@ class Filehandler(FileSystemEventHandler):
 
     def process(self, event):
         if not(event.is_directory):
-            if os.path.isfile(event.src_path) and event.src_path.lower().endswith(('.mp3','.flac')):
+            if os.path.isfile(event.src_path) and event.src_path.lower().endswith(('.mp3','.flac', 'm4a')):
                 self.libscanner.insertSong(event.src_path)
             else:
                 self.libscanner.removeSong(event.src_path)
