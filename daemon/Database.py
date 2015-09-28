@@ -3,11 +3,15 @@
 import os
 import configparser
 import pymysql
+from threading import RLock as Lock
 from warnings import filterwarnings
 
 filterwarnings('ignore', category = pymysql.Warning)
 class Database:
 
+    buffer = []
+    cout = 0
+    lock = Lock()
     def __init__(self, DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE):
         """Init class """
         self.cnx = pymysql.connect(user=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST,  database=DB_DATABASE, port=DB_PORT)
@@ -27,5 +31,25 @@ class Database:
     def updateInsertSong(self, genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path): #notworking
         self.db.executeQuery("INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ('" + genre + b"','" + path.replace("'", '\\\'') + "','" + trackname + "','" + artistname + "','" + albumname + "','" + albumartist + "','" + tracknumber + "','" + year + "','0') " +
                              b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`)")
+
+    def insertMultipleSongs(self, genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path):
+        Database.lock.acquire()
+        self.buffer.append([genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path])
+        if len(self.buffer)> 50:
+            self.pushbuffer()
+        Database.lock.release()
+
+    def pushbuffer(self):
+        query = ('INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ')
+        for song in self.buffer:
+            query += "("
+            for field in song:
+                query += "'" + field + "',"
+            query = query[:-1]
+            query += "),"
+        query = query[:-1]
+        query += " ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`);"
+        self.executeQuery(query.encode())
+        del self.buffer[:]
 
 
