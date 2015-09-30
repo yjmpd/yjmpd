@@ -6,9 +6,9 @@ import signal
 
 
 class YJMPD:
-    """A generic daemon class.
+    """A generic yjdaemon class.
 
-    Usage: subclass the daemon class and override the run() method."""
+    Usage: subclass the yjdaemon class and override the run() method."""
 
     def __init__(self, pidfile, root):
         self.pidfile = pidfile
@@ -63,9 +63,9 @@ class YJMPD:
         os.remove(self.pidfile)
 
     def start(self):
-        """Start the daemon."""
+        """Start the yjdaemon."""
 
-        # Check for a pidfile to see if the daemon already runs
+        # Check for a pidfile to see if the yjdaemon already runs
         try:
             with open(self.pidfile, 'r') as pf:
 
@@ -79,12 +79,12 @@ class YJMPD:
             sys.stderr.write(message.format(self.pidfile))
             sys.exit(1)
 
-        # Start the daemon
+        # Start the yjdaemon
         self.daemonize()
         self.run()
 
     def stop(self):
-        """Stop the daemon."""
+        """Stop the yjdaemon."""
 
         # Get the pid from the pidfile
         try:
@@ -99,7 +99,7 @@ class YJMPD:
             sys.stderr.write(message.format(self.pidfile))
             return  # not an error in a restart
 
-        # Try killing the daemon process
+        # Try killing the yjdaemon process
         try:
             while 1:
                 os.kill(pid, signal.SIGTERM)
@@ -114,7 +114,7 @@ class YJMPD:
                 sys.exit(1)
 
     def restart(self):
-        """Restart the daemon."""
+        """Restart the yjdaemon."""
         self.stop()
         self.start()
 

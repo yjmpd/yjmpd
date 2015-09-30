@@ -25,6 +25,10 @@ class Database:
             print(e)
             print(query)
 
+    def turnoffautocommit(self):
+        self.cursor.execute("SET autocommit=0;")
+        self.cnx.commit()
+
     def removeSong(self, path):
          self.db.executeQuery("DELETE FROM `tracks` WHERE trackUrl = " + path.replace("'", '\\\''))
 
@@ -33,11 +37,11 @@ class Database:
                              b" ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`)")
 
     def insertMultipleSongs(self, genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path):
-        Database.lock.acquire()
         self.buffer.append([genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path])
-        if len(self.buffer)> 50:
+        # Database.lock.acquire()
+        if len(self.buffer) > 50:
             self.pushbuffer()
-        Database.lock.release()
+        # Database.lock.release()
 
     def pushbuffer(self):
         query = ('INSERT INTO `tracks` (`genre`, `trackUrl`, `trackName`, `artistName`, `albumName`, `albumArtist`, `trackNumber`, `year`, `duration`) VALUES ')
@@ -51,5 +55,4 @@ class Database:
         query += " ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`);"
         self.executeQuery(query.encode())
         del self.buffer[:]
-
 

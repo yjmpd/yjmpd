@@ -3,9 +3,6 @@
 from mutagen.easyid3 import EasyID3
 import mutagen._util
 import os
-import threading
-import time
-from concurrent.futures import ThreadPoolExecutor
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -23,11 +20,10 @@ class LibraryScanner:
 
     def scanRecursif(self):
         print("Scanning library "+self.url+" recursively...")
+        # musicdirs = [os.path.join(self.url,o) for o in os.listdir(self.url) if os.path.isdir(os.path.join(self.url,o))]
+        self.db.turnoffautocommit()
         for root, directories, filenames in os.walk(self.url):
-            t = threading.Thread(target=self.scandir,args=(filenames,root))
-            t.start()
-            print(threading.active_count())
-        self.db.pushbuffer()
+            self.scandir(filenames,root)
 
     def scandir(self,filenames, root):
         for filename in filenames:
