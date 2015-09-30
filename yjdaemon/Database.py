@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os
-import configparser
 import pymysql
 from threading import RLock as Lock
 from warnings import filterwarnings
