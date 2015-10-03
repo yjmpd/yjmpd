@@ -19,9 +19,12 @@ class Database:
         try:
             self.cursor.execute(query)
             self.cnx.commit()
+            return(self.cursor.fetchall())
         except pymysql.err.ProgrammingError as e:
             print(e)
             print(query)
+
+
 
     def turnoffautocommit(self):
         self.cursor.execute("SET autocommit=0;")
