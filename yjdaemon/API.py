@@ -1,4 +1,5 @@
 import json
+from yjdaemon.Database import Database
 
 """
 Add a key to the validAPIcalls dictionary, with a corresponding function

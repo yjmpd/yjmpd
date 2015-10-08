@@ -1,10 +1,10 @@
 import sys
 import os
 import configparser
-from daemon.Database import Database
-from daemon.libraryscanner import LibraryScanner
-from daemon.yjmpd import YJMPD
-from daemon.HTTPServer import HTTPServerThread
+from yjdaemon.Database import Database
+from yjdaemon.libraryscanner import LibraryScanner
+from yjdaemon.yjmpd import YJMPD
+from yjdaemon.HTTPServer import HTTPServerThread
 
 debug = False
 
