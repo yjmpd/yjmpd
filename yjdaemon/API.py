@@ -1,5 +1,6 @@
 import json
-from yjdaemon.Database import Database
+
+from yjdaemon.Database import Database as db
 
 """
 Add a key to the validAPIcalls dictionary, with a corresponding function
@@ -43,7 +44,20 @@ class calls:
 
     @staticmethod
     def getsongs(args):
-        return calls.jsonify({"song": song, "args": args})
+        return calls.jsonify({"songs": db.executequerystatic("SELECT id, trackName FROM tracks;"), "args": args})
+
+    @staticmethod
+    def getsongbyid(args):
+        data = args.split("&")
+        splitsting = data[0].split("=")
+        id = splitsting[1]
+        file = db.executequerystatic(
+            "SELECT SUBSTRING_INDEX(trackUrl,'/media/USBHDD/shares/Music/',-1) as filedir FROM `tracks` WHERE id = " + id)
+        try:
+            url = str(file[0][0])
+        except:
+            return calls.jsonify({"result": "NOK", "errormsg" : "Song ID does not exist in database."})
+        return calls.jsonify({"result": "OK", "songurl": "http://localhost:8585/" + url})
 
     @staticmethod
     def setsong(args, songname):
@@ -52,5 +66,5 @@ class calls:
         return calls.jsonify({"result": "OK", "args": args})
 
 
-validAPIcalls = {"getsongs": calls.getsongs, "setsong": calls.setsong}
+validAPIcalls = {"getsongs": calls.getsongs, "setsong": calls.setsong, "getsongbyid": calls.getsongbyid}
 song = "HALLO"

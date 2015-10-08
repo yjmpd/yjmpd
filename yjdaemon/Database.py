@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import pymysql
+import configparser
 from threading import RLock as Lock
 from warnings import filterwarnings
 
@@ -20,9 +21,29 @@ class Database:
             self.cursor.execute(query)
             self.cnx.commit()
             return self.cursor.fetchall()
-        except pymysql.err.ProgrammingError as e:
+        except pymysql.ProgrammingError as e:
             print(e)
             print(query)
+
+    @staticmethod
+    def executequerystatic(query):
+        config = configparser.ConfigParser()
+        try:
+            config.read("config.cfg")
+            DB_USERNAME = config.get("Database", "username")
+            DB_PASSWORD = config.get("Database", "password")
+            DB_HOST     = config.get("Database", "host")
+            DB_DATABASE = config.get("Database", "database")
+            DB_PORT     = config.getint("Database", "port")
+        except Exception as e:
+            print(e)
+
+        cnx = pymysql.connect(user=DB_USERNAME, password=DB_PASSWORD, host=DB_HOST,  database=DB_DATABASE, port=DB_PORT)
+        cursor = cnx.cursor()
+        cursor.execute(query)
+        cnx.commit()
+        return cursor.fetchall()
+
 
     def turnoffautocommit(self):
         self.cursor.execute("SET autocommit=0;")
