@@ -1,6 +1,7 @@
 import json
 
 from yjdaemon.Database import Database as db
+from yjdaemon.maindaemon import MUSIC_DIR
 
 """
 Add a key to the validAPIcalls dictionary, with a corresponding function
@@ -47,12 +48,32 @@ class calls:
         return calls.jsonify({"songs": db.executequerystatic("SELECT id, trackName FROM tracks;"), "args": args})
 
     @staticmethod
+    def getartists(args):
+        return calls.jsonify({"artists": db.executequerystatic("SELECT artistName FROM tracks GROUP BY artistName;"), "args": args})   @staticmethod
+
+    @staticmethod
+    def getalbums(args):
+        return calls.jsonify({"albums": db.executequerystatic("SELECT albumName FROM tracks GROUP BY albumName;"), "args": args})
+
+    @staticmethod
+    def getgenres(args):
+        return calls.jsonify({"genres": db.executequerystatic("SELECT genre FROM tracks GROUP BY genre;"), "args": args})
+
+    @staticmethod
+    def getyears(args):
+        return calls.jsonify({"years": db.executequerystatic("SELECT year FROM tracks GROUP BY year;"), "args": args})
+
+    @staticmethod
+    def getalbumnames(args):
+        return calls.jsonify({"albumnames": db.executequerystatic("SELECT albumName FROM tracks GROUP BY albumName;"), "args": args})
+
+    @staticmethod
     def getsongbyid(args):
         data = args.split("&")
         splitsting = data[0].split("=")
         id = splitsting[1]
         file = db.executequerystatic(
-            "SELECT SUBSTRING_INDEX(trackUrl,'/media/USBHDD/shares/Music/',-1) as filedir FROM `tracks` WHERE id = " + id)
+            "SELECT SUBSTRING_INDEX(trackUrl,'" + MUSIC_DIR + "',-1) as filedir FROM `tracks` WHERE id = " + id)
         try:
             url = str(file[0][0])
         except:
@@ -66,5 +87,12 @@ class calls:
         return calls.jsonify({"result": "OK", "args": args})
 
 
-validAPIcalls = {"getsongs": calls.getsongs, "setsong": calls.setsong, "getsongbyid": calls.getsongbyid}
-song = "HALLO"
+validAPIcalls = {"getsongs": calls.getsongs,
+                 "setsong": calls.setsong,
+                 "getsongbyid": calls.getsongbyid,
+                 "getartists": calls.getartists,
+                 "getalbums": calls.getalbums,
+                 "getgenres": calls.getgenres,
+                 "getyears": calls.getyears,
+                 "getalbumnames": calls.getalbumnames
+                 }
