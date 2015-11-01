@@ -4,6 +4,7 @@
 import http.server
 import socketserver
 import threading
+import html
 
 import yjdaemon.API as API
 
@@ -39,11 +40,13 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         """ Serve a GET request. """
-        path = str(self.path).lstrip("/").split("?")[0]
+        path = html.unescape(self.path)
+        path = str(path).lstrip("/").split("?")[0]
         retval = API.calls.APIcall(path)
+        print(path)
         if retval is not None:  # if call is valid API function
             try:
-                args = str(self.path).lstrip("/").split("?")[1]
+                args = str(html.unescape(self.path)).lstrip("/").split("?")[1]
             except IndexError as e:
                 print(e)
                 self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
@@ -59,11 +62,12 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         """ Serve a POST request. """
-        path = str(self.path).lstrip("/").split("?")[0]
+        path = html.unescape(self.path)
+        path = str(path).lstrip("/").split("?")[0]
         retval = API.calls.APIcall(path)
         if retval is not None:  # if call is valid API function
             try:
-                args = str(self.path).lstrip("/").split("?")[1] #if no args
+                args = str(html.unescape(self.path)).lstrip("/").split("?")[1] #if no args
             except IndexError as e:
                 print(e)
                 self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))

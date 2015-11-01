@@ -1,3 +1,4 @@
 configparser
 mutagen
 PyMySQL
+watchdog

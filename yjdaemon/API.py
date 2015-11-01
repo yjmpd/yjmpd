@@ -43,28 +43,44 @@ class calls:
         return json.loads(rawdata.decode("utf-8"))
 
     @staticmethod
-    def getsongs(args):
-        return calls.jsonify({"songs": db.executequerystatic("SELECT id, trackName FROM tracks;"), "args": args})
+    def getallsongs(args):
+        return calls.jsonify({"songs": db.executequerystatic("SELECT * FROM tracks;"), "args": args , "result": "OK"})
 
     @staticmethod
     def getartists(args):
-        return calls.jsonify({"artists": db.executequerystatic("SELECT artistName FROM tracks GROUP BY artistName;"), "args": args})
+        return calls.jsonify({"artists": db.executequerystatic("SELECT artistName FROM tracks GROUP BY artistName;"), "args": args, "result" : "OK"})
 
     @staticmethod
     def getalbums(args):
-        return calls.jsonify({"albums": db.executequerystatic("SELECT albumName FROM tracks GROUP BY albumName;"), "args": args})
+        return calls.jsonify({"albums": db.executequerystatic("SELECT albumName FROM tracks GROUP BY albumName;"), "args": args, "result":"OK"})
 
     @staticmethod
     def getgenres(args):
-        return calls.jsonify({"genres": db.executequerystatic("SELECT genre FROM tracks GROUP BY genre;"), "args": args})
+        return calls.jsonify({"genres": db.executequerystatic("SELECT genre FROM tracks GROUP BY genre;"), "args": args, "result":"OK"})
 
     @staticmethod
     def getyears(args):
-        return calls.jsonify({"years": db.executequerystatic("SELECT year FROM tracks GROUP BY year;"), "args": args})
+        return calls.jsonify({"years": db.executequerystatic("SELECT year FROM tracks GROUP BY year;"), "args": args, "result":"OK"})
 
     @staticmethod
-    def getalbumnames(args):
-        return calls.jsonify({"albumnames": db.executequerystatic("SELECT albumName FROM tracks GROUP BY albumName;"), "args": args})
+    def getsongs(args):
+        """Get song by album, genre, year, artist"""
+        data = args.partition("?")
+        splitstring = data[0].partition("=")
+        print(splitstring)
+        name= splitstring[0]
+        value = splitstring[2].replace("%20"," ")
+        if name == "album":
+            songs = db.executequerystatic("SELECT * FROM tracks WHERE albumName = \"" + value + "\"")
+        elif name == "genre":
+            songs = db.executequerystatic("SELECT * FROM tracks WHERE genre = \"" + value + "\"")
+        elif name == "year":
+            songs = db.executequerystatic("SELECT * FROM tracks WHERE year = \"" + value + "\"")
+        elif name == "artist":
+            songs = db.executequerystatic("SELECT * FROM tracks WHERE artistName = \"" + value + "\"")
+        else:
+            return calls.jsonify({"result":"NOK", "errormsg": "Not a valid argument"})
+        return calls.jsonify({"result":"OK","songs":songs})
 
     @staticmethod
     def getsongbyid(args):
@@ -73,6 +89,7 @@ class calls:
             config.read("config.cfg")
             musicdir = config.get("Library","musicdir")
             port = config.get("HTTP","port")
+            domainname = config.get("HTTP","domainname")
         except:
             return calls.jsonify({"result" : "NOK" , "errormsg" : "I/O error while reading config."})
         data = args.split("&")
@@ -84,7 +101,7 @@ class calls:
             url = str(file[0][0])
         except:
             return calls.jsonify({"result": "NOK", "errormsg" : "Song ID does not exist in database."})
-        return calls.jsonify({"result": "OK", "songurl": "http://localhost:"+ port + url})
+        return calls.jsonify({"result": "OK", "songurl": "http://"+domainname+":"+ port + url})
 
     @staticmethod
     def setsong(args, songname):
@@ -93,12 +110,12 @@ class calls:
         return calls.jsonify({"result": "OK", "args": args})
 
 
-validAPIcalls = {"getsongs": calls.getsongs,
+validAPIcalls = {"getallsongs": calls.getallsongs,
                  "setsong": calls.setsong,
+                 "getsongs": calls.getsongs,
                  "getsongbyid": calls.getsongbyid,
                  "getartists": calls.getartists,
                  "getalbums": calls.getalbums,
                  "getgenres": calls.getgenres,
-                 "getyears": calls.getyears,
-                 "getalbumnames": calls.getalbumnames
+                 "getyears": calls.getyears
                  }
