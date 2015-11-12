@@ -2,11 +2,10 @@
 
 
 import http.server
-import socketserver
+import yjdaemon.socketserv as socketserv
 import threading
 import html
-
-import yjdaemon.API as API
+from yjdaemon.API import API as API
 
 """
 HTTP request handler.
@@ -14,14 +13,15 @@ HTTP request handler.
 
 
 class HTTPServerThread(threading.Thread):
-    def __init__(self, PORT):
+    def __init__(self, PORT, API):
         threading.Thread.__init__(self)
         self.PORT = PORT
+        self.API = API
 
     def run(self):
         Handler = HTTPHandler
-        socketserver.TCPServer.allow_reuse_address = True
-        httpd = socketserver.TCPServer(("", self.PORT), Handler)
+        socketserv.TCPServer.allow_reuse_address = True
+        httpd = socketserv.TCPServer(("", self.PORT), Handler, self.API)
         httpd.serve_forever()
 
 
@@ -31,6 +31,11 @@ REST API
 
 
 class HTTPHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self,request, client_address, server):
+        http.server.SimpleHTTPRequestHandler.__init__(self, request,client_address,server)
+        self.api = server.api
+
+
     def send_message(self, status, content_type, data):
         self.send_response(status)
         self.send_header("Content-type:", content_type)
@@ -42,14 +47,14 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
         """ Serve a GET request. """
         path = html.unescape(self.path)
         path = str(path).lstrip("/").split("?")[0]
-        retval = API.calls.APIcall(path)
+        retval = self.api.APIcall(path)
         print(path)
         if retval is not None:  # if call is valid API function
             try:
                 args = str(html.unescape(self.path)).lstrip("/").split("?")[1]
             except IndexError as e:
                 print(e)
-                self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
+                self.send_message(403, "application/json", self.api.jsonify({"error": "Missing parameters."}))
                 return
             self.send_message(200, "application/json", retval(args))
         else:  # else parse as normal HTTP request
@@ -64,20 +69,20 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
         """ Serve a POST request. """
         path = html.unescape(self.path)
         path = str(path).lstrip("/").split("?")[0]
-        retval = API.calls.APIcall(path)
+        retval = self.api.APIcall(path)
         if retval is not None:  # if call is valid API function
             try:
                 args = str(html.unescape(self.path)).lstrip("/").split("?")[1] #if no args
             except IndexError as e:
                 print(e)
-                self.send_message(403, "application/json", API.calls.jsonify({"error": "Missing parameters."}))
+                self.send_message(403, "application/json", self.api.jsonify({"error": "Missing parameters."}))
                 return
             if self.headers["Content-Type"] == 'application/json':  # if data is json data
                 length = int(self.headers["Content-Length"])
                 rawdata = self.rfile.read(length)
-                result = retval(args, API.calls.getfromrawjson(rawdata, "data"))
+                result = retval(args, self.api.getfromrawjson(rawdata, "data"))
                 self.send_message(200, "application/json", result)
             else:  # if not json data
-                self.send_message(422, "application/json", API.calls.jsonify({"error": "Not JSON data."}))
+                self.send_message(422, "application/json", self.api.jsonify({"error": "Not JSON data."}))
         else:  # if not API function
-            self.send_message(403, "application/json", API.calls.jsonify({"error": "Not an API function"}))
+            self.send_message(403, "application/json", self.api.jsonify({"error": "Not an API function"}))
