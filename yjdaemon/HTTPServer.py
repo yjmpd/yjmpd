@@ -32,8 +32,9 @@ REST API
 
 class HTTPHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self,request, client_address, server):
-        http.server.SimpleHTTPRequestHandler.__init__(self, request,client_address,server)
         self.api = server.api
+        http.server.SimpleHTTPRequestHandler.__init__(self, request,client_address,server)
+
 
 
     def send_message(self, status, content_type, data):
@@ -56,7 +57,8 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
                 print(e)
                 self.send_message(403, "application/json", self.api.jsonify({"error": "Missing parameters."}))
                 return
-            self.send_message(200, "application/json", retval(args))
+            print(args)
+            self.send_message(200, "application/json", retval( args))
         else:  # else parse as normal HTTP request
             f = self.send_head()
             if f:
