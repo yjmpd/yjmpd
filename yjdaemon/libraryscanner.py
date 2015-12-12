@@ -81,11 +81,11 @@ class LibraryScanner:
 
 
 class Filehandler(FileSystemEventHandler):
-    def __init__(self, LibraryScanner):
-        self.libscanner = LibraryScanner
+    def __init__(self, libraryscanner):
+        self.libscanner = libraryscanner
 
     def process(self, event):
-        if not(event.is_directory):
+        if not event.is_directory:
             if os.path.isfile(event.src_path) and event.src_path.lower().endswith(('.mp3','.flac', 'm4a')):
                 self.libscanner.insertsong(event.src_path)
             else:

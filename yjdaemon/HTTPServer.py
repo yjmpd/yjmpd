@@ -47,7 +47,7 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
         """ Serve a GET request. """
         path = html.unescape(self.path)
         path = str(path).lstrip("/").split("?")[0]
-        retval = self.api.APIcall(path)
+        retval = self.api.apicall(path)
         print(path)
         if retval is not None:  # if call is valid API function
             try:
@@ -70,7 +70,7 @@ class HTTPHandler(http.server.SimpleHTTPRequestHandler):
         """ Serve a POST request. """
         path = html.unescape(self.path)
         path = str(path).lstrip("/").split("?")[0]
-        retval = self.api.APIcall(path)
+        retval = self.api.apicall(path)
         if retval is not None:  # if call is valid API function
             try:
                 args = str(html.unescape(self.path)).lstrip("/").split("?")[1] #if no args

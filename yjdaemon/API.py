@@ -22,19 +22,21 @@ Every function MUST return jsonified data!
 
 
 class API:
-    def __init__(self, DB):
-        self.DB = DB
+    def __init__(self, db, domain, musicdir):
+        self.db = db
+        self.domain = domain
+        self.musicdir = musicdir
         self.validAPIcalls = {"getallsongs": self.getallsongs,
-                 "setsong": self.setsong,
-                 "getsongs": self.getsongs,
-                 "getsongbyid": self.getsongbyid,
-                 "getartists": self.getartists,
-                 "getalbums": self.getalbums,
-                 "getgenres": self.getgenres,
-                 "getyears": self.getyears
-                 }
+                              "setsong": self.setsong,
+                              "getsongs": self.getsongs,
+                              "getsongbyid": self.getsongbyid,
+                              "getartists": self.getartists,
+                              "getalbums": self.getalbums,
+                              "getgenres": self.getgenres,
+                              "getyears": self.getyears
+                              }
 
-    def APIcall(self,sanitizedpath):
+    def apicall(self, sanitizedpath):
         if sanitizedpath in self.validAPIcalls:
             return self.validAPIcalls[sanitizedpath]
         else:
@@ -50,19 +52,19 @@ class API:
         return json.loads(rawdata.decode("utf-8"))
 
     def getallsongs(self, args):
-        return self.jsonify({"songs": self.DB.executequery("SELECT * FROM tracks;"), "args": args , "result": "OK"})
+        return self.jsonify({"songs": self.db.executequery("SELECT * FROM tracks;"), "args": args, "result": "OK"})
 
     def getartists(self,args):
-        return self.jsonify({"artists": self.DB.executequery("SELECT artistName FROM tracks GROUP BY artistName;"), "args": args, "result" : "OK"})
+        return self.jsonify({"artists": self.db.executequery("SELECT artistName FROM tracks GROUP BY artistName;"), "args": args, "result" : "OK"})
 
     def getalbums(self, args):
-        return self.jsonify({"albums": self.DB.executequery("SELECT albumName FROM tracks GROUP BY albumName;"), "args": args, "result": "OK"})
+        return self.jsonify({"albums": self.db.executequery("SELECT albumName FROM tracks GROUP BY albumName;"), "args": args, "result": "OK"})
 
     def getgenres(self, args):
-        return self.jsonify({"genres": self.DB.executequery("SELECT genre FROM tracks GROUP BY genre;"), "args": args, "result": "OK"})
+        return self.jsonify({"genres": self.db.executequery("SELECT genre FROM tracks GROUP BY genre;"), "args": args, "result": "OK"})
 
     def getyears(self, args):
-        return self.jsonify({"years": self.DB.executequery("SELECT year FROM tracks GROUP BY year;"), "args": args, "result": "OK"})
+        return self.jsonify({"years": self.db.executequery("SELECT year FROM tracks GROUP BY year;"), "args": args, "result": "OK"})
 
     def getsongs(self, args):
         """Get song by album, genre, year, artist"""
@@ -72,36 +74,28 @@ class API:
         name= splitstring[0]
         value = splitstring[2].replace("%20"," ")
         if name == "album":
-            songs = self.DB.executequery("SELECT * FROM tracks WHERE albumName = \"" + value + "\"")
+            songs = self.db.executequery("SELECT * FROM tracks WHERE albumName = \"" + value + "\"")
         elif name == "genre":
-            songs = self.DB.executequery("SELECT * FROM tracks WHERE genre = \"" + value + "\"")
+            songs = self.db.executequery("SELECT * FROM tracks WHERE genre = \"" + value + "\"")
         elif name == "year":
-            songs = self.DB.executequery("SELECT * FROM tracks WHERE year = \"" + value + "\"")
+            songs = self.db.executequery("SELECT * FROM tracks WHERE year = \"" + value + "\"")
         elif name == "artist":
-            songs = self.DB.executequery("SELECT * FROM tracks WHERE artistName = \"" + value + "\"")
+            songs = self.db.executequery("SELECT * FROM tracks WHERE artistName = \"" + value + "\"")
         else:
-            return self.jsonify({"result":"NOK", "errormsg": "Not a valid argument"})
-        return self.jsonify({"result":"OK","songs":songs})
+            return self.jsonify({"result": "NOK", "errormsg": "Not a valid argument"})
+        return self.jsonify({"result": "OK", "songs": songs})
 
     def getsongbyid(self, args):
-        config = configparser.ConfigParser()
-        try:
-            config.read("config.cfg")
-            musicdir = config.get("Library","musicdir")
-            port = config.get("HTTP","port")
-            domainname = config.get("HTTP","domainname")
-        except:
-            return self.jsonify({"result" : "NOK" , "errormsg" : "I/O error while reading config."})
         data = args.split("&")
         splitsting = data[0].split("=")
         id = splitsting[1]
-        file = self.DB.executequery(
-            "SELECT SUBSTRING_INDEX(trackUrl,'" + musicdir + "',-1) as filedir FROM `tracks` WHERE id = " + id)
+        file = self.db.executequery(
+            "SELECT SUBSTRING_INDEX(trackUrl,'" + self.musicdir + "',-1) as filedir FROM `tracks` WHERE id = " + id)
         try:
             url = str(file[0][0])
         except:
-            return self.jsonify({"result": "NOK", "errormsg" : "Song ID does not exist in database."})
-        return self.jsonify({"result": "OK", "songurl": "http://"+domainname+":"+ port + url})
+            return self.jsonify({"result": "NOK", "errormsg": "Song ID does not exist in database."})
+        return self.jsonify({"result": "OK", "songurl": "http://" + self.domain + url})
 
     def setsong(self, args, songname):
         global song

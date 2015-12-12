@@ -11,6 +11,7 @@ config = configparser.ConfigParser()
 try:
     config.read("../config.cfg")
     HTTP_PORT = int(config.get("HTTP", "port"))
+    HTTP_DOMAIN = str(config.get("HTTP", "domainname"))
     DAEMON_PORT = int(config.get("Daemon", "port"))
     MUSIC_DIR = str(config.get("Library", "musicdir"))
 
@@ -28,7 +29,7 @@ except Exception as e:
 class MainDaemon(YJMPD):
     def run(self):
         database = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
-        http_thread = HTTPServerThread(HTTP_PORT, API(database))
+        http_thread = HTTPServerThread(HTTP_PORT, API(database, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR))
         http_thread.start()
         LibraryScanner(db, MUSIC_DIR)
 
@@ -51,7 +52,7 @@ if __name__ == "__main__":
             daemon.status()
         elif 'debug' == sys.argv[1]:
             db = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
-            HTTP_thread = HTTPServerThread(HTTP_PORT, API(db))
+            HTTP_thread = HTTPServerThread(HTTP_PORT, API(db, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR))
             HTTP_thread.start()
         else:
             print("Unknown command")
