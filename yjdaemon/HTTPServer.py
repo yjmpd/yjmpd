@@ -2,10 +2,9 @@
 
 
 import http.server
-import yjdaemon.socketserv as socketserv
+import socketserv as socketserv
 import threading
 import html
-from yjdaemon.API import API as API
 
 """
 HTTP request handler.

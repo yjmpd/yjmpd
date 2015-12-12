@@ -1,10 +1,11 @@
 import sys
 import os
 import configparser
-from yjdaemon.Database import Database
-from yjdaemon.libraryscanner import LibraryScanner
-from yjdaemon.yjmpd import YJMPD
-from yjdaemon.HTTPServer import HTTPServerThread
+from Database import Database
+from libraryscanner import LibraryScanner
+from yjmpd import YJMPD
+from API import API
+from HTTPServer import HTTPServerThread
 
 debug = False
 
@@ -13,7 +14,7 @@ try:
     config.read("../config.cfg")
     HTTP_PORT = int(config.get("HTTP", "port"))
     DAEMON_PORT = int(config.get("Daemon", "port"))
-    MUSIC_DIR = str(config.get("Library", "jancodir"))
+    MUSIC_DIR = str(config.get("Library", "musicdir"))
 
     DB_USERNAME = config.get("Database", "username")
     DB_PASSWORD = config.get("Database", "password")
@@ -28,9 +29,9 @@ except Exception as e:
 
 class MainDaemon(YJMPD):
     def run(self):
-        HTTP_thread = HTTPServerThread(HTTP_PORT)
-        HTTP_thread.start()
         db = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+        HTTP_thread = HTTPServerThread(HTTP_PORT, API(db))
+        HTTP_thread.start()
         LibraryScanner(db, MUSIC_DIR)
 
 
@@ -51,6 +52,10 @@ if __name__ == "__main__":
             daemon.restart()
         elif 'status' == sys.argv[1]:
             daemon.status()
+        elif 'debug' == sys.argv[1]:
+            db = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+            HTTP_thread = HTTPServerThread(HTTP_PORT, API(db))
+            HTTP_thread.start()
         else:
             print("Unknown command")
             sys.exit(2)
