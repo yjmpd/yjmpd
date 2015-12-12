@@ -7,8 +7,6 @@ from yjmpd import YJMPD
 from API import API
 from HTTPServer import HTTPServerThread
 
-debug = False
-
 config = configparser.ConfigParser()
 try:
     config.read("../config.cfg")
@@ -18,9 +16,9 @@ try:
 
     DB_USERNAME = config.get("Database", "username")
     DB_PASSWORD = config.get("Database", "password")
-    DB_HOST     = config.get("Database", "host")
+    DB_HOST = config.get("Database", "host")
     DB_DATABASE = config.get("Database", "database")
-    DB_PORT     = config.getint("Database", "port")
+    DB_PORT = config.getint("Database", "port")
 
 except Exception as e:
     print(e.with_traceback())
@@ -29,16 +27,15 @@ except Exception as e:
 
 class MainDaemon(YJMPD):
     def run(self):
-        db = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
-        HTTP_thread = HTTPServerThread(HTTP_PORT, API(db))
-        HTTP_thread.start()
+        database = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+        http_thread = HTTPServerThread(HTTP_PORT, API(database))
+        http_thread.start()
         LibraryScanner(db, MUSIC_DIR)
-
 
 
 if __name__ == "__main__":
     username = os.getenv('USER')
-    if None == username:
+    if username is None:
         dir = "/tmp/.pydaemon.pid"
     else:
         dir = "/home/" + username + "/.pydaemon.pid"

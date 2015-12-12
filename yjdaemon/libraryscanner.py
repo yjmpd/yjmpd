@@ -8,52 +8,51 @@ from mutagen import File
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-class LibraryScanner:
 
-    def __init__(self, Database, librarypath):
-        """Init class """
+class LibraryScanner:
+    def __init__(self, db, librarypath):
         self.url = librarypath
-        self.db = Database
-        self.scanRecursif()
+        self.db = db
+        self.scanrecursif()
         ob = Observer()
         ob.schedule(Filehandler(self), self.url, recursive=True)
         ob.start()
 
-
-    def scanRecursif(self):
-        print("Scanning library " +self.url +" recursively...")
-        # musicdirs = [os.path.join(self.url,o) for o in os.listdir(self.url) if os.path.isdir(os.path.join(self.url,o))]
+    def scanrecursif(self):
         self.db.turnoffautocommit()
-        if not os.path.exists(os.path.join(self.url,".artwork")):
-            os.makedirs(os.path.join(self.url,".artwork"))
+        if not os.path.exists(os.path.join(self.url, ".artwork")):
+            os.makedirs(os.path.join(self.url, ".artwork"))
         for root, directories, filenames in os.walk(self.url):
             self.scandir(filenames,root)
 
-    def scandir(self,filenames, root):
+    def scandir(self, filenames, root):
         for filename in filenames:
-            if filename.lower().endswith(('.mp3', '.flac','.m4a')):
-                path = os.path.join(root,filename)
+            if filename.lower().endswith(('.mp3', '.flac', '.m4a')):
+                path = os.path.join(root, filename)
                 try:
                     print(path, end='\r')
                     id3 = EasyID3(path)
                     audio = MP3(path)
-                    albumname = self.getValue(id3, "album")
+                    albumname = self.getvalue(id3, "album")
                     if albumname is "":
                         albumname = "default"
-                    if not os.path.isfile(os.path.join(self.url,"artwork/" + albumname + ".jpg")):
+                    if not os.path.isfile(os.path.join(self.url, ".artwork/" + albumname + ".jpg")):
                         try:
                             file = File(path)
                             artwork = file.tags['APIC:'].data
-                            with open(os.path.join(self.url,"artwork/"+ self.getValue(id3, "album") +".jpg"), 'wb') as img:
+                            with open(os.path.join(self.url, ".artwork/" + self.getvalue(id3, "album") + ".jpg"), 'wb') as img:
                                 img.write(artwork)
                         except:
-                            print('Artwork error on album:' +  self.getValue(id3, "album"))
-                    self.db.insertmultiplesongs(self.getValue(id3, "genre"), path.replace("'", '\\\''), self.getValue(id3, "title"), self.getValue(id3, "artist"), self.getValue(id3, "album"), self.getValue(id3, "performer"), self.getValue(id3, "tracknumber"), self.getValue(id3, "date"), str(audio.info.length))
-                except (mutagen.id3._util.ID3NoHeaderError):
+                            print('Artwork error on album:' + self.getvalue(id3, "album"))
+                    self.db.insertmultiplesongs(self.getvalue(id3, "genre"), path.replace("'", '\\\''),
+                                                self.getvalue(id3, "title"), self.getvalue(id3, "artist"),
+                                                self.getvalue(id3, "album"), self.getvalue(id3, "performer"),
+                                                self.getvalue(id3, "tracknumber"), self.getvalue(id3, "date"),
+                                                str(audio.info.length))
+                except mutagen.id3._util.ID3NoHeaderError:
                     print("Error reading ID3 tag",  end='\r')
 
-
-    def insertSong(self, path):
+    def insertsong(self, path):
         try:
             id3 = EasyID3(path)
             query = """
@@ -63,17 +62,17 @@ class LibraryScanner:
             `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,
             `albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) ,
              `year` = VALUES(`year`) , `duration` = VALUES(`duration`)"
-            """ % (self.getValue(id3, "genre"),path.replace("'", '\\\''),self.getValue(id3, "title"),self.getValue(id3, "artist"),
-                   self.getValue(id3, "album"),self.getValue(id3, "performer"),self.getValue(id3, "tracknumber"),self.getValue(id3, "date"),self.getValue(id3, ""))
+            """ % (self.getvalue(id3, "genre"), path.replace("'", '\\\''), self.getvalue(id3, "title"), self.getvalue(id3, "artist"),
+                   self.getvalue(id3, "album"), self.getvalue(id3, "performer"), self.getvalue(id3, "tracknumber"), self.getvalue(id3, "date"), self.getvalue(id3, ""))
             print(query)
             self.db.executequery(query)
         except (mutagen.id3._util.ID3NoHeaderError):
             pass
 
-    def removeSong(self,path):
+    def removesong(self, path):
         self.db.removesong(path)
 
-    def getValue(self, id3, value):
+    def getvalue(self, id3, value):
         try:
             return id3[value][0].replace("'", "\\'")
         except (KeyError,  IndexError, ValueError):
@@ -88,7 +87,7 @@ class Filehandler(FileSystemEventHandler):
     def process(self, event):
         if not(event.is_directory):
             if os.path.isfile(event.src_path) and event.src_path.lower().endswith(('.mp3','.flac', 'm4a')):
-                self.libscanner.insertSong(event.src_path)
+                self.libscanner.insertsong(event.src_path)
             else:
                 self.libscanner.removesong(event.src_path)
 
