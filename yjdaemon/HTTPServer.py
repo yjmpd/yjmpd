@@ -20,7 +20,7 @@ class HTTPServerThread(threading.Thread):
     def run(self):
         Handler = HTTPHandler
         socketserv.TCPServer.allow_reuse_address = True
-        httpd = socketserv.TCPServer(("", self.PORT), Handler, self.API)
+        httpd = socketserv.ThreadingTCPServer(("", self.PORT), Handler, self.API)
         httpd.serve_forever()
 
 
