@@ -74,7 +74,7 @@ class API:
         name= splitstring[0]
         value = splitstring[2].replace("%20"," ")
         if name == "album":
-            songs = self.db.executequery("SELECT * FROM tracks WHERE albumName = \"" + value + "\"")
+            songs = self.db.executequery("SELECT * FROM tracks WHERE albumName = \"" + value + "\" ORDER BY trackNumber ")
         elif name == "genre":
             songs = self.db.executequery("SELECT * FROM tracks WHERE genre = \"" + value + "\"")
         elif name == "year":
@@ -90,7 +90,7 @@ class API:
         splitsting = data[0].split("=")
         id = splitsting[1]
         file = self.db.executequery(
-            "SELECT SUBSTRING_INDEX(trackUrl,'" + self.musicdir + "',-1) as filedir FROM `tracks` WHERE id = " + id)
+            "SELECT SUBSTRING_INDEX(trackUrl,'" + self.musicdir + "',-1) as filedir, genre, trackName, artistName, albumName, albumArtist, trackNumber, year, duration, playCount FROM `tracks` WHERE id = " + id)
         try:
             url = str(file[0][0])
         except:

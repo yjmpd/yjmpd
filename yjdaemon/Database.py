@@ -4,7 +4,6 @@ import pymysql
 from warnings import filterwarnings
 filterwarnings('ignore', category=pymysql.Warning)
 
-
 class Database:
     buffer = []
 
@@ -20,13 +19,15 @@ class Database:
             return self.cursor.fetchall()
         except pymysql.ProgrammingError as e:
             print(e)
+        except pymysql.InterfaceError:
+            self.cnx.connect()
+            return self.executequery(query)
 
     def turnoffautocommit(self):
-        self.cursor.execute("SET autocommit=0;")
-        self.cnx.commit()
+        self.executequery("SET autocommit=0;")
 
     def removesong(self, path):
-        self.db.executequery("DELETE FROM `tracks` WHERE trackUrl = " + path.replace("'", '\\\''))
+        self.executequery("DELETE FROM `tracks` WHERE trackUrl = " + path.replace("'", '\\\''))
 
     def insertmultiplesongs(self, genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path):
         self.buffer.append([genre, trackname, artistname, albumname, albumartist, tracknumber, year, duration, path])
