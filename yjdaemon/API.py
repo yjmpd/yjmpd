@@ -95,7 +95,17 @@ class API:
             url = str(file[0][0])
         except:
             return self.jsonify({"result": "NOK", "errormsg": "Song ID does not exist in database."})
-        return self.jsonify({"result": "OK", "songurl": "http://" + self.domain + url})
+        return self.jsonify({"result": "OK",    "songurl": "http://" + self.domain + url,
+                                                "genre":  file[0][1],
+                                                "trackname":  file[0][2],
+                                                "artistname":  file[0][3],
+                                                "albumname":  file[0][4],
+                                                "albumartist":  file[0][5],
+                                                "tracknumber":  file[0][6],
+                                                "year":  file[0][7],
+                                                "duration":  file[0][8],
+                                                "playcount":  file[0][9]
+                            })
 
     def setsong(self, args, songname):
         global song
