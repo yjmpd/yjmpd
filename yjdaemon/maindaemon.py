@@ -31,7 +31,7 @@ class MainDaemon(YJMPD):
         database = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
         http_thread = HTTPServerThread(HTTP_PORT, API(database, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR))
         http_thread.start()
-        LibraryScanner(db, MUSIC_DIR)
+        LibraryScanner(database, MUSIC_DIR)
 
 
 if __name__ == "__main__":
