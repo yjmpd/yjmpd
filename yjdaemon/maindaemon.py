@@ -1,25 +1,25 @@
 import sys
 import os
 import configparser
-from yjdaemon.Database import Database
-from yjdaemon.libraryscanner import LibraryScanner
-from yjdaemon.yjmpd import YJMPD
-from yjdaemon.HTTPServer import HTTPServerThread
-
-debug = False
+from Database import Database
+from libraryscanner import LibraryScanner
+from yjmpd import YJMPD
+from API import API
+from HTTPServer import HTTPServerThread
 
 config = configparser.ConfigParser()
 try:
     config.read("../config.cfg")
     HTTP_PORT = int(config.get("HTTP", "port"))
+    HTTP_DOMAIN = str(config.get("HTTP", "domainname"))
     DAEMON_PORT = int(config.get("Daemon", "port"))
-    MUSIC_DIR = str(config.get("Library", "jancodir"))
+    MUSIC_DIR = str(config.get("Library", "musicdir"))
 
     DB_USERNAME = config.get("Database", "username")
     DB_PASSWORD = config.get("Database", "password")
-    DB_HOST     = config.get("Database", "host")
+    DB_HOST = config.get("Database", "host")
     DB_DATABASE = config.get("Database", "database")
-    DB_PORT     = config.getint("Database", "port")
+    DB_PORT = config.getint("Database", "port")
 
 except Exception as e:
     print(e.with_traceback())
@@ -28,16 +28,15 @@ except Exception as e:
 
 class MainDaemon(YJMPD):
     def run(self):
-        HTTP_thread = HTTPServerThread(HTTP_PORT)
-        HTTP_thread.start()
-        db = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
-        LibraryScanner(db, MUSIC_DIR)
-
+        database = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+        http_thread = HTTPServerThread(HTTP_PORT, API(database, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR))
+        http_thread.start()
+        LibraryScanner(database, MUSIC_DIR)
 
 
 if __name__ == "__main__":
     username = os.getenv('USER')
-    if None == username:
+    if username is None:
         dir = "/tmp/.pydaemon.pid"
     else:
         dir = "/home/" + username + "/.pydaemon.pid"
@@ -51,6 +50,10 @@ if __name__ == "__main__":
             daemon.restart()
         elif 'status' == sys.argv[1]:
             daemon.status()
+        elif 'debug' == sys.argv[1]:
+            db = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+            HTTP_thread = HTTPServerThread(HTTP_PORT, API(db, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR))
+            HTTP_thread.start()
         else:
             print("Unknown command")
             sys.exit(2)
