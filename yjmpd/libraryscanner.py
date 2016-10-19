@@ -26,11 +26,12 @@ class LibraryScanner:
             self.scandir(filenames,root)
 
     def scandir(self, filenames, root):
+        print("Scanning directory: " + root)
         for filename in filenames:
             if filename.lower().endswith(('.mp3', '.flac', '.m4a')):
                 path = os.path.join(root, filename)
                 try:
-                    print(path, end='\r')
+                    #print("Scanning: " + os.path.basename(path), end='\r')
                     id3 = EasyID3(path)
                     audio = MP3(path)
                     albumname = self.getvalue(id3, "album")
@@ -43,14 +44,14 @@ class LibraryScanner:
                             with open(os.path.join(self.url, ".artwork/" + self.getvalue(id3, "album") + ".jpg"), 'wb') as img:
                                 img.write(artwork)
                         except:
-                            print('Artwork error on album:' + self.getvalue(id3, "album"))
+                            print('Artwork error on album:' + self.getvalue(id3, "album"), end='\r')
                     self.db.insertmultiplesongs(self.getvalue(id3, "genre"), path.replace("'", '\\\''),
                                                 self.getvalue(id3, "title"), self.getvalue(id3, "artist"),
                                                 self.getvalue(id3, "album"), self.getvalue(id3, "performer"),
                                                 self.getvalue(id3, "tracknumber"), self.getvalue(id3, "date"),
                                                 str(audio.info.length))
                 except mutagen.id3._util.ID3NoHeaderError:
-                    print("Error reading ID3 tag",  end='\r')
+                    print("Error reading ID3 tag: " + filename)
 
     def insertsong(self, path):
         try:
@@ -76,8 +77,8 @@ class LibraryScanner:
         try:
             return id3[value][0].replace("'", "\\'")
         except (KeyError,  IndexError, ValueError):
-            print("Error reading value of ID3 tag",  end='\r')
-        return ""
+            #print("Error reading value of ID3 tag",  end='\r')
+            return ""
 
 
 class Filehandler(FileSystemEventHandler):

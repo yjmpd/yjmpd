@@ -1,18 +1,18 @@
-import sys
-import os
 import configparser
+import os
+import sys
+
 from Database import Database
-from libraryscanner import LibraryScanner
-from yjmpd import YJMPD
-from API import API
+from YjmpdDaemon import YjmpdDaemon
 from HTTPServer import HTTPServerThread
+from api.API import API
+from libraryscanner import LibraryScanner
 
 config = configparser.ConfigParser()
 try:
-    config.read("../config.cfg")
+    config.read("config.cfg")
     HTTP_PORT = int(config.get("HTTP", "port"))
     HTTP_DOMAIN = str(config.get("HTTP", "domainname"))
-    DAEMON_PORT = int(config.get("Daemon", "port"))
     MUSIC_DIR = str(config.get("Library", "musicdir"))
 
     DB_USERNAME = config.get("Database", "username")
@@ -21,28 +21,29 @@ try:
     DB_DATABASE = config.get("Database", "database")
     DB_PORT = config.getint("Database", "port")
 
+    CERT_FILE = config.get("HTTP", "cert")
 except Exception as e:
-    print(e.with_traceback())
+    print(e)
     sys.exit(1)
 
 
-class MainDaemon(YJMPD):
+class MainDaemon(YjmpdDaemon):
     def run(self):
         database = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
-        http_thread = HTTPServerThread(HTTP_PORT, API(database, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR))
-        http_thread.start()
-        LibraryScanner(database, MUSIC_DIR)
-
+        database2 = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+        HTTPServerThread(HTTP_PORT, API(database, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR), MUSIC_DIR, CERT_FILE).start()
+        LibraryScanner(database2, MUSIC_DIR)
 
 if __name__ == "__main__":
     username = os.getenv('USER')
     if username is None:
-        dir = "/tmp/.pydaemon.pid"
+        piddirectory = "/tmp/.yjmpddeamon.pid"
     else:
-        dir = "/home/" + username + "/.pydaemon.pid"
-    daemon = MainDaemon(dir, MUSIC_DIR)
+        piddirectory = "/home/" + username + "/.yjmpddeamon.pid"
+    daemon = MainDaemon(piddirectory)
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
+            os.chdir(MUSIC_DIR)
             daemon.start()
         elif 'stop' == sys.argv[1]:
             daemon.stop()
@@ -51,13 +52,15 @@ if __name__ == "__main__":
         elif 'status' == sys.argv[1]:
             daemon.status()
         elif 'debug' == sys.argv[1]:
-            db = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
-            HTTP_thread = HTTPServerThread(HTTP_PORT, API(db, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR))
-            HTTP_thread.start()
+            database = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+            http_thread = HTTPServerThread(HTTP_PORT, API(database, HTTP_DOMAIN + ":" + str(HTTP_PORT), MUSIC_DIR), MUSIC_DIR, CERT_FILE)
+            http_thread.start()
+            database2 = Database(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_DATABASE)
+            LibraryScanner(database2, MUSIC_DIR)
         else:
             print("Unknown command")
             sys.exit(2)
         sys.exit(0)
     else:
-        print("usage: %s start|stop|status|restart" % sys.argv[0])
+        print("usage: %s start|stop|status|restart|debug" % sys.argv[0])
         sys.exit(2)
