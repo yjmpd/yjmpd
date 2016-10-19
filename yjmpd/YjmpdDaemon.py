@@ -5,14 +5,13 @@ import atexit
 import signal
 
 
-class YJMPD:
-    """A generic yjdaemon class.
+class YjmpdDaemon:
+    """A generic domotica deamon class.
 
-    Usage: subclass the yjdaemon class and override the run() method."""
+    Usage: subclass the domotica deamon class and override the run() method."""
 
-    def __init__(self, pidfile, root):
+    def __init__(self, pidfile):
         self.pidfile = pidfile
-        self.root = root
 
     def daemonize(self):
         """Deamonize class. UNIX double fork mechanism."""
@@ -27,7 +26,6 @@ class YJMPD:
             sys.exit(1)
 
         # decouple from parent environment
-        os.chdir(self.root)
         os.setsid()
         os.umask(0)
 
@@ -63,7 +61,7 @@ class YJMPD:
         os.remove(self.pidfile)
 
     def start(self):
-        """Start the yjdaemon."""
+        """Start the domotica deamon."""
 
         # Check for a pidfile to see if the yjdaemon already runs
         try:
@@ -84,7 +82,7 @@ class YJMPD:
         self.run()
 
     def stop(self):
-        """Stop the yjdaemon."""
+        """Stop the domotica deamon."""
 
         # Get the pid from the pidfile
         try:
@@ -114,7 +112,7 @@ class YJMPD:
                 sys.exit(1)
 
     def restart(self):
-        """Restart the yjdaemon."""
+        """Restart the domotica deamon."""
         self.stop()
         self.start()
 

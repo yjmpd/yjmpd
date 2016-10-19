@@ -9,21 +9,49 @@ class Database:
     buffer = []
 
     def __init__(self, db_username, db_password, db_host, db_port, db_database):
+        self.username = db_username
+        self.password = db_password
+        self.host = db_host
+        self.port = db_port
+        self.database = db_database
+
         self.cnx = pymysql.connect(user=db_username, password=db_password, host=db_host,
                                    database=db_database, port=db_port)
-        self.cursor = self.cnx.cursor()
+        self.dictCursor = self.cnx.cursor(pymysql.cursors.DictCursor)
+        self.normalcursor = self.cnx.cursor()
 
-    def executequery(self, query):
-        try:
-            self.cursor.execute(query)
-            self.cnx.commit()
-            return self.cursor.fetchall()
-        except:
-            self.cnx.connect()
-            return self.executequery(query)
+    def disconnect(self):
+        self.dictCursor.close()
+        self.normalcursor.close()
+        self.cnx.close()
 
     def turnoffautocommit(self):
-        self.executequery("SET autocommit=0;")
+        self.executequerylist("SET autocommit=0;")
+
+    def getinstance(self):
+        return Database(self.username, self.password, self.host, self.port, self.database)
+
+    def executequerydict(self, query):
+        try:
+            self.dictCursor.execute(query)
+            self.cnx.commit()
+            fetch = self.dictCursor.fetchall()
+            return fetch
+        except pymysql.Error as e:
+            print(e)
+            return
+
+    def executequerylist(self, query, returnid=False):
+        try:
+            self.normalcursor.execute(query)
+            self.cnx.commit()
+            fetch = self.normalcursor.fetchall()
+            if returnid:
+                return self.normalcursor.lastrowid
+            return fetch
+        except pymysql.Error as e:
+            print(e)
+            return
 
     def removesong(self, path):
         self.executequery("DELETE FROM `tracks` WHERE trackUrl = " + path.replace("'", '\\\''))
@@ -44,5 +72,5 @@ class Database:
             query += "),"
         query = query[:-1]
         query += " ON DUPLICATE KEY UPDATE `genre`=VALUES(`genre`) , `trackName` = VALUES(`trackName`) , `artistName` = VALUES(`artistName`) ,`albumName` = VALUES(`albumName`) , `albumArtist` = VALUES(`albumArtist`) , `trackNumber` = VALUES(`trackNumber`) , `year` = VALUES(`year`) , `duration` = VALUES(`duration`);"
-        self.executequery(query.encode())
+        self.executequerylist(query.encode())
         del self.buffer[:]

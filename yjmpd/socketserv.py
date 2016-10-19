@@ -131,7 +131,7 @@ __version__ = "0.4"
 import socket
 import selectors
 import os
-import errno
+
 try:
     import threading
 except ImportError:
