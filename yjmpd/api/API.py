@@ -6,11 +6,8 @@ class API:
 
     def __init__(self, db, domain, musicdir):
         self.db = db
-        self.db.disconnect()
         self.domain = domain
         self.musicdir = musicdir
-        print(self.musicdir)
-        print(self.domain)
         self.validFilters = ["albumArtist", "albumName", "artistName", "trackName", "genre", "year"]
 
     """ Creates readable looking json """
@@ -51,20 +48,18 @@ class API:
         call = urlstrip[0]
         del urlstrip[0]
 
-        tmpdb = self.db.getinstance()
-
         if protocol == "get":
             if call == "artists":
-                result = self.jsonify({"artists": tmpdb.executequerydict("SELECT artistName FROM tracks GROUP BY artistName;"), "result": "OK"})
+                result = self.jsonify({"artists": self.db.executequerydict("SELECT artistName FROM tracks GROUP BY artistName;"), "result": "OK"})
             elif call == "albums":
-                result = self.jsonify({"albums": tmpdb.executequerydict("SELECT albumName FROM tracks GROUP BY albumName;"), "result": "OK"})
+                result = self.jsonify({"albums": self.db.executequerydict("SELECT albumName FROM tracks GROUP BY albumName;"), "result": "OK"})
             elif call == "years":
-                result = self.jsonify({"years": tmpdb.executequerydict("SELECT year FROM tracks GROUP BY year;"), "result": "OK"})
+                result = self.jsonify({"years": self.db.executequerydict("SELECT year FROM tracks GROUP BY year;"), "result": "OK"})
             elif call == "genres":
-                result = self.jsonify({"genres": tmpdb.executequerydict("SELECT genre FROM tracks GROUP BY genre;"), "result": "OK"})
+                result = self.jsonify({"genres": self.db.executequerydict("SELECT genre FROM tracks GROUP BY genre;"), "result": "OK"})
             elif call == "songs":
                 if len(urlstrip) > 0 and urlstrip[0] != "":
-                    result = self.jsonify({"song": tmpdb.executequerydict("SELECT *, CONCAT('https://" + self.domain + "/', SUBSTRING_INDEX(trackUrl,'" + self.musicdir + "',-1)) as filedir FROM tracks WHERE id = " + urlstrip[0]), "result": "OK"})
+                    result = self.jsonify({"song": self.db.executequerydict("SELECT *, CONCAT('https://" + self.domain + "/', SUBSTRING_INDEX(trackUrl,'" + self.musicdir + "',-1)) as filedir FROM tracks WHERE id = " + urlstrip[0]), "result": "OK"})
                 else:
                     filterstring = ""
                     for arg in args:
@@ -72,13 +67,12 @@ class API:
                         if len(argsplit) == 2 and argsplit[0] in self.validFilters:
                             filterstring += "AND " + argsplit[0] + "=\"" + argsplit[1] + "\""
 
-                    result = self.jsonify({"songs": tmpdb.executequerydict("SELECT *, CONCAT('https://" + self.domain + "/', SUBSTRING_INDEX(trackUrl,'" + self.musicdir + "',-1)) as filedir FROM tracks WHERE 1=1 " + filterstring + ";"), "result": "OK"})
+                    result = self.jsonify({"songs": self.db.executequerydict("SELECT *, CONCAT('https://" + self.domain + "/', SUBSTRING_INDEX(trackUrl,'" + self.musicdir + "',-1)) as filedir FROM tracks WHERE 1=1 " + filterstring + ";"), "result": "OK"})
             else:
                 result = False
         else:
             result = False
 
-        tmpdb.disconnect()
         return result
 
     def apigetcall(self, url, args):

@@ -6,9 +6,9 @@ import signal
 
 
 class YjmpdDaemon:
-    """A generic domotica deamon class.
+    """A generic deamon class.
 
-    Usage: subclass the domotica deamon class and override the run() method."""
+    Usage: subclass the deamon class and override the run() method."""
 
     def __init__(self, pidfile):
         self.pidfile = pidfile
@@ -61,7 +61,7 @@ class YjmpdDaemon:
         os.remove(self.pidfile)
 
     def start(self):
-        """Start the domotica deamon."""
+        """Start the deamon."""
 
         # Check for a pidfile to see if the yjdaemon already runs
         try:
@@ -82,7 +82,7 @@ class YjmpdDaemon:
         self.run()
 
     def stop(self):
-        """Stop the domotica deamon."""
+        """Stop the deamon."""
 
         # Get the pid from the pidfile
         try:
@@ -112,7 +112,7 @@ class YjmpdDaemon:
                 sys.exit(1)
 
     def restart(self):
-        """Restart the domotica deamon."""
+        """Restart the deamon."""
         self.stop()
         self.start()
 
