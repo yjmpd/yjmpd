@@ -9,12 +9,12 @@ After=mysqld.service
 
 [Service]
 Type=simple
-User=root
-Group=root
+User=janco
+Group=janco
 WorkingDirectory=/opt/yjmpd
 ExecStart=/opt/yjmpd/yjmpd
 Restart=always
-Environment=USER=root HOME=/home/root
+Environment=USER=janco HOME=/home/janco
 
 [Install]
 WantedBy=multi-user.target

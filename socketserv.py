@@ -430,7 +430,7 @@ class TCPServer(BaseServer):
 
     socket_type = socket.SOCK_STREAM
 
-    request_queue_size = 5
+    request_queue_size = 50
 
     allow_reuse_address = False
 
