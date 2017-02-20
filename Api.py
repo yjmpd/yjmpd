@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from flask import Flask
-from flask.ext.cors import CORS
+from flask_cors import CORS
 
 from YjmpdConfig import http_config
 from blueprints.AlbumBlueprint import albumBlueprint

@@ -3,3 +3,5 @@ mutagen
 PyMySQL
 watchdog
 flask
+flask_cors
+pillow

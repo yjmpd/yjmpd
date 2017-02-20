@@ -37,6 +37,7 @@ class LibraryScanner(threading.Thread):
             os.makedirs(os.path.join(self.library_path, ".artwork"))
         for root, directories, files in os.walk(self.library_path):
             self.scan_directory(files, root, db)
+        db.commit_buffer();
 
     def scan_directory(self, files, root, db):
         print("Scanning directory: " + root)

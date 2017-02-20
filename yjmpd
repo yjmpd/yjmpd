@@ -1,2 +1,2 @@
 #!/bin/bash
-python3.5 Yjmpd.py
+python3.6 Yjmpd.py
